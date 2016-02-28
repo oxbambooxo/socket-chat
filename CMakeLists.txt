@@ -1,7 +1,7 @@
 # Set the name and the supported language of the project
 project(GTK3_DEMO_PROJECT C)
 # Set the minimum version of cmake required to build this project
-cmake_minimum_required(VERSION 3.3)
+cmake_minimum_required(VERSION 3.4)
 # Use the package PkgConfig to detect GTK+ headers/library files
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
