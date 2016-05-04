@@ -2,6 +2,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <strings.h>
+#include <errno.h>
 
 GtkWindow *main_window, *init_window;
 GtkTextBuffer *input_text_buffer, *output_text_buffer;
@@ -97,26 +98,50 @@ void show_message(gchar *str) {
 }
 
 void init_connect(GtkWidget *widget, gpointer *data) {
-    if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
-        show_message("创建socket出错");
+    const gchar *server_name = gtk_entry_buffer_get_text(ip_entry_buffer);
+    struct addrinfo hints, *result, *aip;
+    int err;
+    memset(&hints, 0, sizeof(struct addrinfo));
+//    bzero(&hints, sizeof(struct addrinfo));
+    hints.ai_family = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+    hints.ai_flags = 0;
+    hints.ai_canonname = NULL;
+    hints.ai_addr = NULL;
+    hints.ai_next = NULL;
+    if ((err = getaddrinfo(server_name, "56789", &hints, &result)) != 0) {
+        char *error = g_strconcat("查找主机出错:", gai_strerror(err), NULL);
+        show_message(error);
+        g_free(error);
         return;
+    };
+    for (aip = result; aip != NULL; aip = result->ai_next) {
+        struct sockaddr_in *aip_addr_in = (struct sockaddr_in *) aip->ai_addr;
+        char addr[20];
+        inet_ntop(aip->ai_family, (void *) &(aip_addr_in->sin_addr), addr, aip_addr_in->sin_len);
+//        char addr = inet_ntoa(aip_addr_in->sin_addr);
+        g_message("server addr: %s, port %d", addr, ntohs(aip_addr_in->sin_port));
+        if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+            char *error = g_strconcat("创建socket出错:", strerror(errno), NULL);
+            show_message(error);
+            g_free(error);
+        }
+        if (connect(sock_fd, aip->ai_addr, aip->ai_addrlen) != 0) {
+            g_message("connect failed");
+            char *error = g_strconcat("网络连接失败:", strerror(errno), NULL);
+            show_message(error);
+            g_free(error);
+        } else {
+            g_message("connect succed");
+            gtk_widget_hide(GTK_WIDGET(init_window));
+            gtk_widget_show_all(GTK_WIDGET(main_window));
+            break; /* Success */
+        }
     }
-    struct hostent *server = gethostbyname(gtk_entry_buffer_get_text(ip_entry_buffer));
-    if (server == NULL) {
-        show_message("不正确的服务器地址");
+    if (aip == NULL) {               /* No address succeeded */
+        show_message("连接失败");
         return;
-    }
-    struct sockaddr_in dest;
-    bzero(&dest, sizeof(dest));
-    dest.sin_family = AF_INET;
-    bcopy(server->h_addr, &dest.sin_addr.s_addr, (size_t) server->h_length);
-    dest.sin_port = htons(56789);
-    if (connect(sock_fd, (struct sockaddr *) &dest, sizeof(dest)) != 0) {
-        show_message("网络连接失败");
-        return;
-    } else {
-        gtk_widget_hide(GTK_WIDGET(init_window));
-        gtk_widget_show_all(GTK_WIDGET(main_window));
     }
 }
 
