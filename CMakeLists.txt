@@ -1,22 +1,29 @@
-# Set the name and the supported language of the project
-project(GTK3_DEMO_PROJECT C)
-# Set the minimum version of cmake required to build this project
+project(gtk3-chat-toy C)
 cmake_minimum_required(VERSION 3.4)
-# Use the package PkgConfig to detect GTK+ headers/library files
+
+set(CMAKE_BUILD_TYPE Debug)
+set(CMAKE_CXX_FLAGS "-g -Wall")
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(GTK3 REQUIRED gtk+-3.0)
-# Setup CMake to use GTK+, tell the compiler where to look for headers
-# and to the linker where to look for libraries
+pkg_check_modules(JSON_GLIB REQUIRED json-glib-1.0)
+
 include_directories(${GTK3_INCLUDE_DIRS})
 link_directories(${GTK3_LIBRARY_DIRS})
-# Add other flags to the compiler
 add_definitions(${GTK3_CFLAGS_OTHER})
 
+include_directories(${JSON_GLIB_INCLUDE_DIRS})
+link_directories(${JSON_GLIB_LIBRARY_DIRS})
+add_definitions(${JSON_GLIB_CFLAGS_OTHER})
 
 add_definitions(-DCLIENT_GLADE="${CMAKE_SOURCE_DIR}/client/client.glade")
-# Add an executable compiled from client/main.c
+
 add_executable(client client/main.c)
-# Link the target to the GTK+ libraries
 target_link_libraries(client ${GTK3_LIBRARIES})
+target_link_libraries(client ${JSON_GLIB_LIBRARIES})
+
 
 add_executable(server server/main.c)
+
+
