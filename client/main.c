@@ -71,13 +71,14 @@ gboolean input_press_event(GtkWidget *widget, GdkEventKey *event, gpointer user_
             json_builder_add_string_value(builder, data_text);
             json_builder_end_object(builder);
 
-            JsonGenerator *gen = json_generator_new();
             JsonNode *root = json_builder_get_root(builder);
+            JsonGenerator *gen = json_generator_new();
             json_generator_set_root(gen, root);
+            json_node_free(root);
 
             gsize str_length;
             gchar *str = json_generator_to_data(gen, &str_length);
-            json_node_free(root);
+
             g_object_unref(gen);
             g_object_unref(builder);
 
@@ -97,7 +98,7 @@ gboolean input_press_event(GtkWidget *widget, GdkEventKey *event, gpointer user_
             g_free(data_text);
             g_free(data);
             clean_text_buffer(input_text_buffer);
-            return TRUE;
+            return 1;
         }
         default:
             return FALSE;
@@ -128,6 +129,24 @@ void show_message(char *format, ...) {
     g_signal_connect(message_dialog, "destroy", G_CALLBACK(gtk_widget_destroy), NULL);
 }
 
+void start_chat() {
+    gtk_widget_hide(GTK_WIDGET(init_window));
+    gtk_widget_show_all(GTK_WIDGET(main_window));
+}
+
+void end_chat() {
+    gtk_widget_hide(GTK_WIDGET(main_window));
+    gtk_widget_show(GTK_WIDGET(init_window));
+}
+
+gboolean server_disconnect(gpointer data) {
+    g_message("server disconnect %s", strerror(errno));
+    end_chat();
+    show_message("已断开连接");
+    close(sock_fd);
+    return G_SOURCE_REMOVE;
+}
+
 #define BUFSIZE 2048
 
 gpointer handle_connect(gpointer none) {
@@ -138,8 +157,8 @@ gpointer handle_connect(gpointer none) {
         while (data->len < 4) {
             len = recv(sock_fd, buffer, BUFSIZE, 0);
             if (len <= 0) {
-                g_message("server disconnect %s", strerror(errno));
-                g_string_free(data, TRUE);
+                g_idle_add(server_disconnect, NULL);
+                g_string_free(data, 1);
                 return NULL;
             }
             g_string_append_len(data, buffer, len);
@@ -152,7 +171,8 @@ gpointer handle_connect(gpointer none) {
             len = recv(sock_fd, buffer, BUFSIZE, 0);
             if (len <= 0) {
                 g_message("server disconnect %s", strerror(errno));
-                g_string_free(data, TRUE);
+                g_idle_add(server_disconnect, NULL);
+                g_string_free(data, 1);
                 return NULL;
             }
             g_string_append_len(data, buffer, len);
@@ -163,37 +183,36 @@ gpointer handle_connect(gpointer none) {
         if (!json_parser_load_from_data(parser, data->str + 4, length, &error)) {
             g_message("Unable parse: %s", error->message);
             g_error_free(error);
-            continue;
-        }
-        JsonReader *reader = json_reader_new(json_parser_get_root(parser));
-        /*  < gchar ** > usging demo
-        int a = json_reader_count_elements(reader);
-        g_print("-- reader has %d member\n", a);
-        gchar **b = json_reader_list_members(reader);
-        for (gchar **c = b; *c; c++) {
-            g_print("-- reader.%s\n", *c);
-        }
-        g_strfreev(b);
-         */
+        } else {
+            JsonReader *reader = json_reader_new(json_parser_get_root(parser));
+            /*  < gchar ** > usging demo
+            int a = json_reader_count_elements(reader);
+            g_print("-- reader has %d member\n", a);
+            gchar **b = json_reader_list_members(reader);
+            for (gchar **c = b; *c; c++) {
+                g_print("-- reader.%s\n", *c);
+            }
+            g_strfreev(b);
+             */
 
-        json_reader_read_member(reader, "type");
-        gint64 type = json_reader_get_int_value(reader);
-        json_reader_end_member(reader);
-        json_reader_read_member(reader, "message");
-        const gchar *message = json_reader_get_string_value(reader);
-        json_reader_end_member(reader);
-        json_reader_read_member(reader, "timestamp");
-        gint64 timestamp = json_reader_get_int_value(reader);
-        json_reader_end_member(reader);
+            json_reader_read_member(reader, "type");
+            gint64 type = json_reader_get_int_value(reader);
+            json_reader_end_member(reader);
+            json_reader_read_member(reader, "message");
+            const gchar *message = json_reader_get_string_value(reader);
+            json_reader_end_member(reader);
+            json_reader_read_member(reader, "timestamp");
+            gint64 timestamp = json_reader_get_int_value(reader);
+            json_reader_end_member(reader);
 
-        if (type == 1 && message && timestamp) {
-            gchar *prefix = timestamp_to_string(timestamp);
-            gchar *content = g_strconcat(prefix, "\r\n", message, "\r\n", NULL);
-            g_idle_add(output_content, content);
-            g_free(prefix);
+            if (type == 1 && message && timestamp) {
+                gchar *prefix = timestamp_to_string(timestamp);
+                gchar *content = g_strconcat(prefix, "\r\n", message, "\r\n", NULL);
+                g_idle_add(output_content, content);
+                g_free(prefix);
+            }
+            g_object_unref(reader);
         }
-
-        g_object_unref(reader);
         g_object_unref(parser);
         g_string_erase(data, 0, length + 4);
     }
@@ -230,9 +249,9 @@ void create_connect(GtkWidget *widget, gpointer *data) {
                 show_message("网络连接失败: %s", strerror(errno));
             } else {
                 g_message("connect succed");
-                gtk_widget_hide(GTK_WIDGET(init_window));
-                gtk_widget_show_all(GTK_WIDGET(main_window));
-                g_thread_new("handle_connect", handle_connect, NULL);
+                start_chat();
+                GThread *handle = g_thread_new("handle_connect", handle_connect, NULL);
+                g_thread_unref(handle);
                 break; /* Success */
             }
         }
@@ -246,7 +265,7 @@ void create_connect(GtkWidget *widget, gpointer *data) {
 gboolean check_ip_entry_enter(GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
     if (event->keyval == GDK_KEY_Return) {
         create_connect(NULL, NULL);
-        return TRUE;
+        return 1;
     }
     return FALSE;
 }
@@ -273,7 +292,7 @@ int main(int argc, char **argv) {
     g_object_unref(G_OBJECT(builder));
     g_signal_connect(input_text_view, "key_press_event", G_CALLBACK(input_press_event), NULL);
     g_signal_connect(init_button, "clicked", G_CALLBACK(create_connect), NULL);
-    g_signal_connect_swapped(ip_entry, "key_press_event", G_CALLBACK(check_ip_entry_enter), init_button);
+    g_signal_connect_swapped(ip_entry, "key_press_event", G_CALLBACK(check_ip_entry_enter), NULL);
     g_signal_connect(init_window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     g_signal_connect(main_window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     gtk_widget_show_all(GTK_WIDGET(init_window));
