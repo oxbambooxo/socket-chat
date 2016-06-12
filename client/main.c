@@ -47,63 +47,11 @@ gboolean output_content(gpointer data) {
     return G_SOURCE_REMOVE;
 }
 
-
 gchar *timestamp_to_string(time_t timestamp) {
     GDateTime *datetime = g_date_time_new_from_unix_local(time(&timestamp));
     gchar *string = g_date_time_format(datetime, "%Y-%m-%d %H:%M:%S");
     g_date_time_unref(datetime);
     return string;
-}
-
-gboolean input_press_event(GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
-    switch (event->keyval) {
-        case GDK_KEY_Return:
-            // if (event->state & GDK_CONTROL_MASK)
-        {
-            gchar *data_text = get_from_text_buffer(input_text_buffer);
-
-            JsonBuilder *builder = json_builder_new();
-
-            json_builder_begin_object(builder);
-            json_builder_set_member_name(builder, "type");
-            json_builder_add_int_value(builder, 1);
-            json_builder_set_member_name(builder, "message");
-            json_builder_add_string_value(builder, data_text);
-            json_builder_end_object(builder);
-
-            JsonNode *root = json_builder_get_root(builder);
-            JsonGenerator *gen = json_generator_new();
-            json_generator_set_root(gen, root);
-            json_node_free(root);
-
-            gsize str_length;
-            gchar *str = json_generator_to_data(gen, &str_length);
-
-            g_object_unref(gen);
-            g_object_unref(builder);
-
-            gchar *data = g_malloc(str_length + 4);
-            guint32 pack_data_length = g_htonl(str_length);
-            memcpy(data, &pack_data_length, 4);
-            memcpy(data + 4, str, str_length);
-
-            if (sock_fd) {
-                // FIXME 发送失败检测
-                send(sock_fd, (void *) data, str_length + 4, 0);
-            } else {
-                gtk_widget_show(GTK_WIDGET(init_window));
-            }
-
-            g_free(str);
-            g_free(data_text);
-            g_free(data);
-            clean_text_buffer(input_text_buffer);
-            return 1;
-        }
-        default:
-            return FALSE;
-    }
-    return FALSE;
 }
 
 void show_message(char *format, ...) {
@@ -143,8 +91,61 @@ gboolean server_disconnect(gpointer data) {
     g_message("server disconnect %s", strerror(errno));
     end_chat();
     show_message("已断开连接");
-    close(sock_fd);
+    if (sock_fd) {
+        close(sock_fd);
+        sock_fd = 0;
+    }
     return G_SOURCE_REMOVE;
+}
+
+gboolean input_press_event(GtkWidget *widget, GdkEventKey *event, gpointer user_data) {
+    switch (event->keyval) {
+        case GDK_KEY_Return:
+            // if (event->state & GDK_CONTROL_MASK)
+        {
+            gchar *data_text = get_from_text_buffer(input_text_buffer);
+
+            JsonBuilder *builder = json_builder_new();
+
+            json_builder_begin_object(builder);
+            json_builder_set_member_name(builder, "type");
+            json_builder_add_int_value(builder, 1);
+            json_builder_set_member_name(builder, "message");
+            json_builder_add_string_value(builder, data_text);
+            json_builder_end_object(builder);
+
+            JsonNode *root = json_builder_get_root(builder);
+            JsonGenerator *gen = json_generator_new();
+            json_generator_set_root(gen, root);
+            json_node_free(root);
+
+            gsize str_length;
+            gchar *str = json_generator_to_data(gen, &str_length);
+
+            g_object_unref(gen);
+            g_object_unref(builder);
+
+            gchar *data = g_malloc(str_length + 4);
+            guint32 pack_data_length = g_htonl(str_length);
+            memcpy(data, &pack_data_length, 4);
+            memcpy(data + 4, str, str_length);
+
+            // FIXME 发送失败检测
+            if (send(sock_fd, (void *) data, str_length + 4, 0) <= 0) {
+                g_message("send data failed %s", strerror(errno));
+                g_idle_add(server_disconnect, NULL);
+            }
+
+            g_free(str);
+            g_free(data_text);
+            g_free(data);
+            clean_text_buffer(input_text_buffer);
+            return 1;
+        }
+        default:
+            return FALSE;
+    }
+    return FALSE;
 }
 
 #define BUFSIZE 2048
@@ -219,11 +220,23 @@ gpointer handle_connect(gpointer none) {
 }
 
 void create_connect(GtkWidget *widget, gpointer *data) {
-    const gchar *server_name = gtk_entry_buffer_get_text(ip_entry_buffer);
+    const gchar *ip_input = gtk_entry_buffer_get_text(ip_entry_buffer);
+    gchar **ip_input_strv = g_strsplit(ip_input, ":", 2);
+    gchar *server_name, *server_port;
+    if (ip_input_strv[0]) {
+        server_name = ip_input_strv[0];
+    } else {
+        server_name = "127.0.0.1";
+    }
+    if (g_strv_length(ip_input_strv) == 2 && ip_input_strv[1]) {
+        server_port = ip_input_strv[1];
+    } else {
+        server_port = "56789";
+    }
+
     struct addrinfo hints, *result, *aip;
-    int err;
-    memset(&hints, 0, sizeof(struct addrinfo));
-//    bzero(&hints, sizeof(struct addrinfo));
+    int err = 0;
+    bzero(&hints, sizeof(struct addrinfo));
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_protocol = IPPROTO_TCP;
@@ -231,10 +244,13 @@ void create_connect(GtkWidget *widget, gpointer *data) {
     hints.ai_canonname = NULL;
     hints.ai_addr = NULL;
     hints.ai_next = NULL;
-    if ((err = getaddrinfo(server_name, "56789", &hints, &result)) != 0) {
+    if ((err = getaddrinfo(server_name, server_port, &hints, &result)) != 0) {
         show_message("查找主机出错: %s", gai_strerror(err));
+        g_strfreev(ip_input_strv);
         return;
     };
+    g_strfreev(ip_input_strv);
+
     for (aip = result; aip != NULL; aip = result->ai_next) {
         struct sockaddr_in *aip_addr_in = (struct sockaddr_in *) aip->ai_addr;
         char addr[20];
@@ -247,6 +263,8 @@ void create_connect(GtkWidget *widget, gpointer *data) {
             if (connect(sock_fd, aip->ai_addr, aip->ai_addrlen) != 0) {
                 g_message("connect failed");
                 show_message("网络连接失败: %s", strerror(errno));
+                close(sock_fd);
+                sock_fd = 0;
             } else {
                 g_message("connect succed");
                 start_chat();
