@@ -9,6 +9,7 @@
   </object>
   <object class="GtkTextBuffer" id="input_text_buffer"/>
   <object class="GtkEntryBuffer" id="ip_entry_buffer"/>
+  <object class="GtkEntryBuffer" id="name_entry_buffer"/>
   <object class="GtkWindow" id="init_window">
     <property name="can_focus">False</property>
     <property name="title" translatable="yes">输入服务器地址</property>
@@ -20,20 +21,44 @@
     <property name="deletable">False</property>
     <property name="opacity">0.80000000000000004</property>
     <child>
-      <object class="GtkHBox" id="hbox1">
+      <object class="GtkVBox" id="vbox1">
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <child>
-          <object class="GtkEntry" id="ip_entry">
+          <object class="GtkHBox" id="hbox1">
             <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="buffer">ip_entry_buffer</property>
-            <property name="max_length">16</property>
-            <property name="invisible_char">●</property>
-            <property name="primary_icon_activatable">False</property>
-            <property name="secondary_icon_activatable">False</property>
-            <property name="primary_icon_sensitive">True</property>
-            <property name="secondary_icon_sensitive">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkLabel" id="server_label">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">服务器：</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkEntry" id="ip_entry">
+                <property name="visible">True</property>
+                <property name="can_focus">True</property>
+                <property name="buffer">ip_entry_buffer</property>
+                <property name="max_length">16</property>
+                <property name="invisible_char">●</property>
+                <property name="invisible_char_set">True</property>
+                <property name="primary_icon_activatable">False</property>
+                <property name="secondary_icon_activatable">False</property>
+                <property name="primary_icon_sensitive">True</property>
+                <property name="secondary_icon_sensitive">True</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">1</property>
+              </packing>
+            </child>
           </object>
           <packing>
             <property name="expand">True</property>
@@ -42,20 +67,31 @@
           </packing>
         </child>
         <child>
-          <object class="GtkVBox" id="vbox1">
+          <object class="GtkHBox" id="hbox2">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
             <child>
-              <placeholder/>
+              <object class="GtkLabel" id="name_label">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="label" translatable="yes">用户名：</property>
+              </object>
+              <packing>
+                <property name="expand">True</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
             </child>
             <child>
-              <object class="GtkButton" id="init_button">
-                <property name="label" translatable="yes">连接</property>
-                <property name="width_request">70</property>
-                <property name="height_request">25</property>
+              <object class="GtkEntry" id="name_entry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
+                <property name="buffer">name_entry_buffer</property>
+                <property name="invisible_char">●</property>
+                <property name="primary_icon_activatable">False</property>
+                <property name="secondary_icon_activatable">False</property>
+                <property name="primary_icon_sensitive">True</property>
+                <property name="secondary_icon_sensitive">True</property>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -63,14 +99,26 @@
                 <property name="position">1</property>
               </packing>
             </child>
-            <child>
-              <placeholder/>
-            </child>
           </object>
           <packing>
             <property name="expand">True</property>
             <property name="fill">True</property>
             <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkButton" id="init_button">
+            <property name="label" translatable="yes">连接</property>
+            <property name="width_request">70</property>
+            <property name="height_request">25</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+          </object>
+          <packing>
+            <property name="expand">True</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
           </packing>
         </child>
       </object>
