@@ -1,14 +1,12 @@
 Requirement
 ===========
 
-::
-
-    cmake
-    gtk+3
-    json-glib
+    * cmake
+    * gtk+3
+    * json-glib
 
 
-Build client
+Build Client
 ============
 
 ::
@@ -19,7 +17,7 @@ Build client
     make client
     ./client
 
-Build server
+Build Server
 ============
 
 server temporary provior Python server(C version will coming soon), that need python2.7 and *gevent*::
@@ -29,15 +27,15 @@ server temporary provior Python server(C version will coming soon), that need py
 
 the port argument default is 56789
 
-C-S protocol
+C-S Protocol
 ============
 
 package data is serialize's json value,
-package send between client and server illustrate like::
+package send between client and server illustrate like:
 
-    +----------------------------------
-    | length[4 byte] |   data[N byte]
-    +----------------------------------
+    | +----------------------------------------------
+    | | length[4 byte] | data[N byte]
+    | +----------------------------------------------
 
 the data json format are the following:
 

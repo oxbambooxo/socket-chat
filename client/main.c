@@ -2,6 +2,7 @@
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <strings.h>
+#include <string.h>
 #include <errno.h>
 #include <glib/gprintf.h>
 #include <json-glib/json-glib.h>
@@ -138,6 +139,7 @@ void fill_name(gpointer mark, gpointer data) {
     gtk_text_buffer_get_iter_at_offset(output_text_buffer, &iter2, offset + DEFAULT_NAME_LEN);
     gtk_text_buffer_delete(output_text_buffer, &iter1, &iter2);
     gtk_text_buffer_insert(output_text_buffer, &iter1, data, -1);
+    gtk_text_buffer_delete_mark(output_text_buffer, mark);
 }
 
 gboolean fill_sender_name(gpointer data) {
@@ -479,7 +481,7 @@ void create_connect(GtkWidget *widget, gpointer *data) {
     for (aip = result; aip != NULL; aip = result->ai_next) {
         struct sockaddr_in *aip_addr_in = (struct sockaddr_in *) aip->ai_addr;
         char addr[20];
-        inet_ntop(aip->ai_family, (void *) &(aip_addr_in->sin_addr), addr, aip_addr_in->sin_len);
+        inet_ntop(aip->ai_family, (void *) &(aip_addr_in->sin_addr), addr, sizeof(struct sockaddr_in));
 //        char addr = inet_ntoa(aip_addr_in->sin_addr);
         g_message("server addr: %s, port %d", addr, ntohs(aip_addr_in->sin_port));
         if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
