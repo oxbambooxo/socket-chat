@@ -1,0 +1,18 @@
+language: c
+
+compiler:
+  - clang
+  - gcc
+
+env:
+  - GTK=3.4
+  - GTK=3.18
+
+before_install:
+  - sudo apt-get install -qq libjson-glib-1.0-0 libjson-glib-dev
+
+script:
+  - mkdir build
+  - cd build
+  - cmake ..
+  - make client
