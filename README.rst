@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/oxbambooxo/gtk3-socket-chat.svg?branch=master
+    :target: https://travis-ci.org/oxbambooxo/gtk3-socket-chat
+
 Requirement
 ===========
 
