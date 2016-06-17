@@ -529,7 +529,7 @@ int main(int argc, char **argv) {
 
     gtk_init(&argc, &argv);
 
-#if (gtk_major_version <= 3 && gtk_minor_version <= 10)
+#if GTK_MAJOR_VERSION <= 3 && GTK_MINOR_VERSION < 10
     GError *error = NULL;
     builder = gtk_builder_new(NULL);
     if(gtk_builder_add_from_file(builder, CLIENT_GLADE, &error) <= 0){
