@@ -1,9 +1,9 @@
 Requirement
 ===========
 
-    * cmake
-    * gtk+3
-    * json-glib
+* cmake
+* gtk+3
+* json-glib
 
 
 Build Client
@@ -31,11 +31,11 @@ C-S Protocol
 ============
 
 package data is serialize's json value,
-package send between client and server illustrate like:
+package send between client and server illustrate like::
 
-    | +----------------------------------------------
-    | | length[4 byte] | data[N byte]
-    | +----------------------------------------------
+    +----------------------------------------------
+    | length[4 byte] | data[N byte]
+    +----------------------------------------------
 
 the data json format are the following:
 

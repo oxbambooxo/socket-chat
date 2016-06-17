@@ -528,7 +528,19 @@ int main(int argc, char **argv) {
     GtkEntry *ip_entry, *name_entry;
 
     gtk_init(&argc, &argv);
+
+#if (gtk_major_version <= 3 && gtk_minor_version <= 10)
+    GError *error = NULL;
+    builder = gtk_builder_new(NULL);
+    if(gtk_builder_add_from_file(builder, CLIENT_GLADE, &error) <= 0){
+        g_message("Unable build: %s", error->message);
+        g_error_free(error);
+        abort();
+    }
+#else
     builder = gtk_builder_new_from_file(CLIENT_GLADE);
+#endif
+
     main_window = GTK_WINDOW(gtk_builder_get_object(builder, "main_window"));
     init_window = GTK_WINDOW(gtk_builder_get_object(builder, "init_window"));
     init_button = GTK_BUTTON(gtk_builder_get_object(builder, "init_button"));

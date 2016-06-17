@@ -23,7 +23,5 @@ add_executable(client client/main.c)
 target_link_libraries(client ${GTK3_LIBRARIES})
 target_link_libraries(client ${JSON_GLIB_LIBRARIES})
 
-
 add_executable(server server/main.c)
-
 
