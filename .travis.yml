@@ -4,12 +4,8 @@ compiler:
   - clang
   - gcc
 
-env:
-  - GTK=3.4
-  - GTK=3.18
-
 before_install:
-  - sudo apt-get install -qq libjson-glib-1.0-0 libjson-glib-dev
+  - sudo apt-get install -qq libjson-glib-dev libgtk-3-dev
 
 install:
 # Install CMake 3.4.3
