@@ -9,8 +9,8 @@ compiler:
   - gcc
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; sudo apt-get install -qq libjson-glib-dev libgtk-3-dev                                             ;fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; brew install gtk+3 json-glib                                                                         ;fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq libjson-glib-dev libgtk-3-dev                                        ;fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install gtk+3 json-glib                                                                    ;fi
 
 install:
 # Install CMake 3.4.3
