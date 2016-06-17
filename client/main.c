@@ -531,7 +531,7 @@ int main(int argc, char **argv) {
 
 #if GTK_MAJOR_VERSION <= 3 && GTK_MINOR_VERSION < 10
     GError *error = NULL;
-    builder = gtk_builder_new(NULL);
+    builder = gtk_builder_new();
     if(gtk_builder_add_from_file(builder, CLIENT_GLADE, &error) <= 0){
         g_message("Unable build: %s", error->message);
         g_error_free(error);
