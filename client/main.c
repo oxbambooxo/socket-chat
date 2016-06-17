@@ -1,6 +1,7 @@
 #include <gtk/gtk.h>
 #include <netdb.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
 #include <strings.h>
 #include <string.h>
 #include <errno.h>
@@ -481,7 +482,8 @@ void create_connect(GtkWidget *widget, gpointer *data) {
     for (aip = result; aip != NULL; aip = result->ai_next) {
         struct sockaddr_in *aip_addr_in = (struct sockaddr_in *) aip->ai_addr;
         char addr[20];
-        inet_ntop(aip->ai_family, (void *) &(aip_addr_in->sin_addr), addr, sizeof(struct sockaddr_in));
+        // linux platform sockaddr_in no named member 'sin_len', use INET_ADDRSTRLEN instead
+        inet_ntop(aip->ai_family, (void *) &(aip_addr_in->sin_addr), addr, INET_ADDRSTRLEN);
 //        char addr = inet_ntoa(aip_addr_in->sin_addr);
         g_message("server addr: %s, port %d", addr, ntohs(aip_addr_in->sin_port));
         if ((sock_fd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
