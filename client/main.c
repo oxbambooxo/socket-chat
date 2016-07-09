@@ -428,7 +428,7 @@ gpointer handle_connect(gpointer none) {
                 g_idle_add(output_content, output);
                 g_free(prefix);
 
-            } else if (type == 3) {
+            } else if (type == 2) {
                 json_reader_read_member(reader, "sender");
                 const gchar *sender = json_reader_get_string_value(reader);
                 json_reader_end_member(reader);

@@ -49,7 +49,7 @@ def handle(sock, address):
                 name = names.get(data['sender'], data['sender'])
                 # print('find the', data['sender'], 'name is:',name)
                 pack = json.dumps({
-                    'type': 3,
+                    'type': 2,
                     'sender': data['sender'],
                     'name': name,
                 })

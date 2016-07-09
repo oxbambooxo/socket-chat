@@ -75,7 +75,7 @@ the data json format are the following:
 * server return client the name ::
 
     {
-        "type": 3,
+        "type": 2,
         "sender": "IVPJu99yiTF",  // sender id
         "name": "Jack",  // user's name
     }
