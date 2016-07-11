@@ -4,9 +4,9 @@
 Requirement
 ===========
 
-* cmake
+* cmake >= 3.4
 * gtk+3
-* json-glib
+* json-glib-1.0
 
 
 Build Client
@@ -18,7 +18,7 @@ Build Client
     cd build
     cmake ..
     make client
-    ./client
+    ./client/client
 
 Build Server
 ============

@@ -71,6 +71,7 @@ def handel_mq(mq):
 
 if __name__ == '__main__':
     gevent.spawn(handel_mq, mq)
-
-    server = StreamServer(('0.0.0.0', 56789), handle, backlog=1024)
+    import sys
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 56789
+    server = StreamServer(('0.0.0.0', port), handle, backlog=1024)
     server.serve_forever()

@@ -1,6 +1,6 @@
 # project
 .idea
-build/
+build
 
 # Object files
 *.o
