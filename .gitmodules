@@ -1,0 +1,6 @@
+[submodule "jansson"]
+	path = jansson
+	url = git@github.com:akheron/jansson.git
+[submodule "uthash"]
+	path = uthash
+	url = git@github.com:troydhanson/uthash.git
