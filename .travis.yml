@@ -13,8 +13,16 @@ git:
   submodules: false
 
 before_install:
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update -qq;sudo apt-get install -qq libjson-glib-dev libgtk-3-dev                ;fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update;brew install gtk+3 json-glib                                                        ;fi
+# PPA for libuv-dev
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+      sudo apt-add-repository ppa:linuxjedi/ppa -y
+      sudo apt-get update;
+      sudo apt-get install -y libuv-dev libjson-glib-dev libgtk-3-dev ;
+    fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+      brew update;
+      brew install gtk+3 json-glib libuv;
+    fi
   - sed -i 's/git@github.com:/https:\/\/github.com\//' .gitmodules
   - git submodule update --init --recursive
 
