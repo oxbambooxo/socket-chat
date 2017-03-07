@@ -8,6 +8,12 @@ Requirement
 * gtk+3
 * json-glib-1.0
 
+Install Submodule
+==================
+
+::
+
+    git submodule update --init --recursive
 
 Build Client
 ============
