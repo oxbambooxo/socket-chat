@@ -34,11 +34,11 @@ cache:
 
 install:
 # Install CMake 3.4.3
-  - if [[ "$TRAVIS_OS_NAME" == "linux"]] && [[ ! -d "$HOME/cmake-3.4.3-Linux-x86_64" ]]; then
+  - if [[ "$TRAVIS_OS_NAME" == "linux" && (! -d "$HOME/cmake-3.4.3-Linux-x86_64") ]]; then
       wget --no-check-certificate http://cmake.org/files/v3.4/cmake-3.4.3-Linux-x86_64.tar.gz;
       tar -xzf cmake-3.4.3-Linux-x86_64.tar.gz;
     fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]] && [[ ! -d "$HOME/cmake-3.4.3-Darwin-x86_64" ]]; then
+  - if [[ "$TRAVIS_OS_NAME" == "osx" && (! -d "$HOME/cmake-3.4.3-Darwin-x86_64") ]]; then
       wget --no-check-certificate http://cmake.org/files/v3.4/cmake-3.4.3-Darwin-x86_64.tar.gz;
       tar -xzf cmake-3.4.3-Darwin-x86_64.tar.gz;
     fi
