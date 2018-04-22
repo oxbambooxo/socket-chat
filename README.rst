@@ -20,7 +20,6 @@ Build Client
 
 ::
 
-    mkdir build
     cd build
     cmake ..
     make client
@@ -29,7 +28,8 @@ Build Client
 Build Server
 ============
 
-server temporary provior Python server(C version will coming soon), that need python2.7 and *gevent*::
+server temporary provior Python server(C version will coming soon),
+that need python2.7 and *gevent*::
 
     cd server
     python main.py <port>
@@ -43,50 +43,46 @@ package data is serialize's json value,
 package send between client and server illustrate like::
 
     +----------------------------------------------
-    | length[4 byte] | data[N byte]
+    | type[4 byte] | length[4 byte] | data[N byte]
     +----------------------------------------------
 
-the data json format are the following:
+the data json format depend on difference type value
 
-* client send message ::
+* Type 1, client send boardcast message
 
-    {
-        "type": 1,
-        "message": "hello",  // message content
-    }
+    - client ::
 
-* server broadcast message ::
+        {
+            "message": "hello"
+        }
 
-    {
-        "type": 1,
-        "message": "hello",  // message content
-        "timestamp": 1465720314.344066,  // message timestamp
-        "sender": "IVPJu99yiTF",  // sender id
-    }
+    - server ::
 
-* client setting self name ::
+        {
+            "message":   "hello",           // message content
+            "timestamp": 1465720314.344066, // message timestamp
+            "id":        "IVPJu99yiTF",     // sender id
+        }
 
-    {
-        "type": 2,
-        "name": "Jack",  // user's name
-    }
+* Type 2, client modify his own information
 
-* client require the name ::
+    - client ::
 
-    {
-        "type": 3,
-        "sender": "IVPJu99yiTF",  // ask sender id
-    }
+        {
+            "name": "Jack", // user's name
+        }
 
-* server return client the name ::
+* Type 3, client query some one info
 
-    {
-        "type": 2,
-        "sender": "IVPJu99yiTF",  // sender id
-        "name": "Jack",  // user's name
-    }
+    - client ::
 
+        {
+            "id": "IVPJu99yiTF", // ask some one id
+        }
 
+    - server ::
 
-
-
+        {
+            "id":   "IVPJu99yiTF", // user id
+            "name": "Jack",        // user's name
+        }

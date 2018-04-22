@@ -8,6 +8,13 @@
 #include <glib/gprintf.h>
 #include <json-glib/json-glib.h>
 
+#define BUFSIZE 2048
+#define PACK_HEAD 8
+
+#define PACK_TYPE_SENDMESSAGE 1
+#define PACK_TYPE_MODIFYINFO 2
+#define PACK_TYPE_QUERYINFO 3
+
 GtkWindow *main_window, *init_window;
 GtkTextBuffer *input_text_buffer, *output_text_buffer;
 GtkTextView *input_text_view, *output_text_view;
@@ -20,28 +27,28 @@ gint const DEFAULT_NAME_LEN;
 gint sock_fd = 0;
 
 struct c_info {
-    gchar *sender;
+    gchar *uid;
     gchar *name;
     GPtrArray *mark_array;
 };
 
 struct output_handle {
     gchar *content;
-    gchar *sender;
+    gchar *uid;
     gboolean has_name;
 };
 
-gpointer new_output(gchar *content, const gchar *sender, gboolean has_name) {
+gpointer new_output(gchar *content, const gchar *uid, gboolean has_name) {
     struct output_handle *output = g_malloc(sizeof(struct output_handle));
     output->content = content;
-    output->sender = g_strdup(sender);
+    output->uid = g_strdup(uid);
     output->has_name = has_name;
     return output;
 }
 
 void del_output(struct output_handle *output) {
     g_free(output->content);
-    g_free(output->sender);
+    g_free(output->uid);
     g_free(output);
 }
 
@@ -71,14 +78,12 @@ void clean_text_buffer(GtkTextBuffer *text_buffer) {
 
 gboolean server_disconnect(gpointer data);
 
-void require_sender_name(const gchar *sender) {
+void require_uid_info(const gchar *uid) {
     JsonBuilder *builder = json_builder_new();
 
     json_builder_begin_object(builder);
-    json_builder_set_member_name(builder, "type");
-    json_builder_add_int_value(builder, 3);
-    json_builder_set_member_name(builder, "sender");
-    json_builder_add_string_value(builder, sender);
+    json_builder_set_member_name(builder, "uid");
+    json_builder_add_string_value(builder, uid);
     json_builder_end_object(builder);
 
     JsonNode *root = json_builder_get_root(builder);
@@ -92,12 +97,14 @@ void require_sender_name(const gchar *sender) {
     g_object_unref(gen);
     g_object_unref(builder);
 
-    gpointer data = g_malloc(str_length + 4);
+    gpointer data = g_malloc(str_length + PACK_HEAD);
+    guint32 pack_data_type = g_htonl(PACK_TYPE_QUERYINFO);
     guint32 pack_data_length = g_htonl(str_length);
-    memcpy(data, &pack_data_length, 4);
-    memcpy(data + 4, str, str_length);
+    memcpy(data, &pack_data_type, 4);
+    memcpy(data + 4, &pack_data_length, 4);
+    memcpy(data + 8, str, str_length);
 
-    if (send(sock_fd, data, str_length + 4, 0) <= 0) {
+    if (send(sock_fd, data, str_length + PACK_HEAD, 0) <= 0) {
         g_message("send data failed %s", strerror(errno));
         g_idle_add(server_disconnect, NULL);
     }
@@ -111,12 +118,12 @@ gboolean output_content(gpointer data) {
     gtk_text_buffer_get_end_iter(output_text_buffer, &last_iter);
 
     if (!output->has_name) {
-        struct c_info *info = (struct c_info *) g_hash_table_lookup(hash, output->sender);
+        struct c_info *info = (struct c_info *) g_hash_table_lookup(hash, output->uid);
         if (info) {
             GtkTextMark *mark = gtk_text_mark_new(NULL, 1);
             gtk_text_buffer_add_mark(output_text_buffer, mark, &last_iter);
             g_ptr_array_add(info->mark_array, mark);
-            require_sender_name(output->sender);
+            require_uid_info(output->uid);
         }
     }
 
@@ -127,8 +134,8 @@ gboolean output_content(gpointer data) {
     return G_SOURCE_REMOVE;
 }
 
-struct sender_name {
-    gchar *sender;
+struct u_info {
+    gchar *uid;
     gchar *name;
 };
 
@@ -143,9 +150,9 @@ void fill_name(gpointer mark, gpointer data) {
     gtk_text_buffer_delete_mark(output_text_buffer, mark);
 }
 
-gboolean fill_sender_name(gpointer data) {
-    struct sender_name *sn = (struct sender_name *) data;
-    struct c_info *info = (struct c_info *) g_hash_table_lookup(hash, sn->sender);
+gboolean fill_user_info(gpointer data) {
+    struct u_info *sn = (struct u_info *) data;
+    struct c_info *info = (struct c_info *) g_hash_table_lookup(hash, sn->uid);
     if (info) {
         g_ptr_array_foreach(info->mark_array, fill_name, sn->name);
     }
@@ -219,8 +226,6 @@ void start_chat() {
     JsonBuilder *builder = json_builder_new();
 
     json_builder_begin_object(builder);
-    json_builder_set_member_name(builder, "type");
-    json_builder_add_int_value(builder, 2);
     json_builder_set_member_name(builder, "name");
     json_builder_add_string_value(builder, MY_NAME);
     json_builder_end_object(builder);
@@ -236,12 +241,14 @@ void start_chat() {
     g_object_unref(gen);
     g_object_unref(builder);
 
-    gpointer data = g_malloc(str_length + 4);
+    gpointer data = g_malloc(str_length + PACK_HEAD);
+    guint32 pack_data_type = g_htonl(PACK_TYPE_MODIFYINFO);
     guint32 pack_data_length = g_htonl(str_length);
-    memcpy(data, &pack_data_length, 4);
-    memcpy(data + 4, str, str_length);
+    memcpy(data, &pack_data_type, 4);
+    memcpy(data + 4, &pack_data_length, 4);
+    memcpy(data + 8, str, str_length);
 
-    if (send(sock_fd, data, str_length + 4, 0) <= 0) {
+    if (send(sock_fd, data, str_length + PACK_HEAD, 0) <= 0) {
         g_message("send data failed %s", strerror(errno));
         g_idle_add(server_disconnect, NULL);
     }
@@ -252,41 +259,40 @@ void start_chat() {
 gchar *const DEFAULT_NAME = "unknow";
 gint const DEFAULT_NAME_LEN = 6;
 
-void create_sender_info(const gchar *sender, const gchar *name) {
+void create_user_info(const gchar *uid, const gchar *name) {
     struct c_info *new_info = g_malloc(sizeof(struct c_info));
-    new_info->sender = g_strdup(sender);
+    new_info->uid = g_strdup(uid);
     if (name && strlen(name) != 0) {
         new_info->name = g_strdup(name);
     } else {
         new_info->name = g_strdup(DEFAULT_NAME);
     }
     new_info->mark_array = g_ptr_array_new();
-    g_hash_table_insert(hash, g_strdup(sender), (gpointer) new_info);
+    g_hash_table_insert(hash, g_strdup(uid), (gpointer) new_info);
 }
 
-int set_sender_name(const gchar *sender, const gchar *name) {
-    struct c_info *info = (struct c_info *) g_hash_table_lookup(hash, sender);
+int set_user_name(const gchar *uid, const gchar *name) {
+    struct c_info *info = (struct c_info *) g_hash_table_lookup(hash, uid);
 
     if (!info) {
-        g_print("no find: %s, new name: %s\n", sender, name);
-        create_sender_info(sender, name);
+        g_print("no find: %s, new name: %s\n", uid, name);
+        create_user_info(uid, name);
 
-        struct sender_name *data = g_malloc(sizeof(struct sender_name));
-        data->sender = g_strdup(sender);
+        struct u_info *data = g_malloc(sizeof(struct u_info));
+        data->uid = g_strdup(uid);
         data->name = g_strdup(name);
-        g_idle_add(fill_sender_name, data);
+        g_idle_add(fill_user_info, data);
         return 1;
     } else {
-        g_print("sender: %s, old name: %s, new name: %s\n", sender, info->name, name);
         if (strcmp(info->name, name) != 0) {
-            g_print("changeing\n");
+            g_message("uid:%s old name:%s new name: %s", uid, info->name, name);
             g_free(info->name);
             info->name = g_strdup(name);
 
-            struct sender_name *data = g_malloc(sizeof(struct sender_name));
-            data->sender = g_strdup(sender);
+            struct u_info *data = g_malloc(sizeof(struct u_info));
+            data->uid = g_strdup(uid);
             data->name = g_strdup(name);
-            g_idle_add(fill_sender_name, data);
+            g_idle_add(fill_user_info, data);
             return 1;
         }
 
@@ -304,8 +310,6 @@ gboolean input_press_event(GtkWidget *widget, GdkEventKey *event, gpointer user_
             JsonBuilder *builder = json_builder_new();
 
             json_builder_begin_object(builder);
-            json_builder_set_member_name(builder, "type");
-            json_builder_add_int_value(builder, 1);
             json_builder_set_member_name(builder, "message");
             json_builder_add_string_value(builder, data_text);
             json_builder_end_object(builder);
@@ -321,12 +325,14 @@ gboolean input_press_event(GtkWidget *widget, GdkEventKey *event, gpointer user_
             g_object_unref(gen);
             g_object_unref(builder);
 
-            gpointer data = g_malloc(str_length + 4);
+            gpointer data = g_malloc(str_length + PACK_HEAD);
+            guint32 pack_data_type = g_htonl(PACK_TYPE_SENDMESSAGE);
             guint32 pack_data_length = g_htonl(str_length);
-            memcpy(data, &pack_data_length, 4);
-            memcpy(data + 4, str, str_length);
+            memcpy(data, &pack_data_type, 4);
+            memcpy(data + 4, &pack_data_length, 4);
+            memcpy(data + 8, str, str_length);
 
-            if (send(sock_fd, data, str_length + 4, 0) <= 0) {
+            if (send(sock_fd, data, str_length + PACK_HEAD, 0) <= 0) {
                 g_message("send data failed %s", strerror(errno));
                 g_idle_add(server_disconnect, NULL);
             }
@@ -343,14 +349,23 @@ gboolean input_press_event(GtkWidget *widget, GdkEventKey *event, gpointer user_
     return FALSE;
 }
 
-#define BUFSIZE 2048
+void print_dumps(void * address, int n) {
+    int i =0;
+    unsigned char* byte_array = address;
+    while (i < n)
+    {
+        g_print("%02x",(unsigned)byte_array[i]);
+        i++;
+    }
+    g_print("\n");
+}
 
 gpointer handle_connect(gpointer none) {
     char buffer[BUFSIZE];
     GString *data = g_string_new(NULL);
     ssize_t len = 0;
     while (1) {
-        while (data->len < 4) {
+        while (data->len < PACK_HEAD) {
             len = recv(sock_fd, buffer, BUFSIZE, 0);
             if (len <= 0) {
                 g_idle_add(server_disconnect, NULL);
@@ -359,11 +374,14 @@ gpointer handle_connect(gpointer none) {
             }
             g_string_append_len(data, buffer, len);
         }
+
         guint32 i;
-        memcpy(&i, data->str, 4); // 数据前4字节为长度
+        memcpy(&i, data->str, 4); // 读取数据类型
+        guint32 type = g_ntohl(i); // 数据类型
+        memcpy(&i, data->str + 4, 4); // 读取数据长度
         guint32 length = g_ntohl(i); // 数据长度
 
-        while (data->len < (length + 4)) {
+        while (data->len < (length + PACK_HEAD)) {
             len = recv(sock_fd, buffer, BUFSIZE, 0);
             if (len <= 0) {
                 g_message("server disconnect %s", strerror(errno));
@@ -376,7 +394,7 @@ gpointer handle_connect(gpointer none) {
 
         GError *error = NULL;
         JsonParser *parser = json_parser_new();
-        if (data->len > 4 && !json_parser_load_from_data(parser, data->str + 4, length, &error)) {
+        if (data->len > PACK_HEAD && !json_parser_load_from_data(parser, data->str + PACK_HEAD, length, &error)) {
             g_message("Unable parse: %s", error->message);
             g_error_free(error);
         } else {
@@ -390,14 +408,11 @@ gpointer handle_connect(gpointer none) {
             }
             g_strfreev(b);
              */
+             g_message("recv type:%d data:%s", type, data->str + PACK_HEAD);
 
-            json_reader_read_member(reader, "type");
-            gint64 type = json_reader_get_int_value(reader);
-            json_reader_end_member(reader);
-
-            if (type == 1) {
-                json_reader_read_member(reader, "sender");
-                const gchar *sender = json_reader_get_string_value(reader);
+            if (type == PACK_TYPE_SENDMESSAGE) {
+                json_reader_read_member(reader, "uid");
+                const gchar *uid = json_reader_get_string_value(reader);
                 json_reader_end_member(reader);
                 json_reader_read_member(reader, "message");
                 const gchar *message = json_reader_get_string_value(reader);
@@ -409,12 +424,12 @@ gpointer handle_connect(gpointer none) {
                 gchar *prefix;
                 gchar *now = timestamp_to_string(timestamp);
 
-                struct c_info *info = (struct c_info *) g_hash_table_lookup(hash, sender);
+                struct c_info *info = (struct c_info *) g_hash_table_lookup(hash, uid);
                 gpointer name;
                 gboolean has_name;
                 if (!info) {
                     name = DEFAULT_NAME;
-                    create_sender_info(sender, NULL);
+                    create_user_info(uid, NULL);
                     has_name = 0;
                 } else {
                     name = info->name;
@@ -424,26 +439,26 @@ gpointer handle_connect(gpointer none) {
                 g_free(now);
 
                 gchar *content = g_strconcat(prefix, "\r\n", message, "\r\n", NULL);
-                gpointer *output = new_output(content, sender, has_name);
+                gpointer *output = new_output(content, uid, has_name);
                 g_idle_add(output_content, output);
                 g_free(prefix);
 
-            } else if (type == 2) {
-                json_reader_read_member(reader, "sender");
-                const gchar *sender = json_reader_get_string_value(reader);
+            } else if (type == PACK_TYPE_QUERYINFO) {
+                json_reader_read_member(reader, "uid");
+                const gchar *uid = json_reader_get_string_value(reader);
                 json_reader_end_member(reader);
                 json_reader_read_member(reader, "name");
                 const gchar *name = json_reader_get_string_value(reader);
                 json_reader_end_member(reader);
 
-                if (sender && name && set_sender_name(sender, name)) {
+                if (uid && name && set_user_name(uid, name)) {
                     g_message("find client: %s", name);
                 }
             }
             g_object_unref(reader);
         }
         g_object_unref(parser);
-        g_string_erase(data, 0, length + 4);
+        g_string_erase(data, 0, length + PACK_HEAD);
     }
 }
 

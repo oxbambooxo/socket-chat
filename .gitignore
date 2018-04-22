@@ -1,6 +1,6 @@
 # project
 .idea
-build
+.vscode
 
 # Object files
 *.o
