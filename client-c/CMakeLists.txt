@@ -14,8 +14,8 @@ link_directories(${JSON_GLIB_LIBRARY_DIRS})
 add_definitions(${JSON_GLIB_CFLAGS_OTHER})
 
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/client/client.glade")
-    set(CLIENT_GLADE_FILE "${CMAKE_SOURCE_DIR}/client/client.glade")
+if(EXISTS "${CMAKE_SOURCE_DIR}/client-c/client.glade")
+    set(CLIENT_GLADE_FILE "${CMAKE_SOURCE_DIR}/client-c/client.glade")
 elseif(EXISTS "${CMAKE_SOURCE_DIR}/client.glade")
     set(CLIENT_GLADE_FILE "${CMAKE_SOURCE_DIR}/client.glade")
 else()

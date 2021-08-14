@@ -23,7 +23,7 @@ Build Client
     cd build
     cmake ..
     make client
-    ./client/client
+    ./client-c/client
 
 Build Server
 ============
@@ -31,7 +31,8 @@ Build Server
 server temporary provior Python server(C version will coming soon),
 that need python2.7 and *gevent*::
 
-    cd server
+    cd server-python
+    pip install -r requirements.txt
     python main.py <port>
 
 the port argument default is 56789

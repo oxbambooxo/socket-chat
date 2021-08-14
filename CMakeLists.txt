@@ -6,5 +6,5 @@ set(CMAKE_CXX_FLAGS "-g -Wall")
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 add_subdirectory(./jansson)
-add_subdirectory(./client)
-add_subdirectory(./server)
+add_subdirectory(./client-c)
+add_subdirectory(./server-c)
