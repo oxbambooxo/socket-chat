@@ -25,6 +25,9 @@ Build Client
 Build Server
 ============
 
+Python implementation
+---------------------
+
 server temporary provior Python server(C version will coming soon),
 that need python2.7 and *gevent*::
 
@@ -33,6 +36,19 @@ that need python2.7 and *gevent*::
     python main.py <port>
 
 the port argument default is 56789
+
+C implementation
+----------------
+
+The experimental C server depends on ``libuv`` (``libuv1-dev`` on Debian/
+Ubuntu). After installing the dependency, build the target with CMake::
+
+    cd build
+    cmake ..
+    cmake --build . --target server
+    ./server-c/server <port>
+
+If ``<port>`` is omitted, the server listens on ``56789``.
 
 C-S Protocol
 ============
