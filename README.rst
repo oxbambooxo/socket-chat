@@ -4,16 +4,13 @@
 Requirement
 ===========
 
-* cmake >= 3.4
+* cmake >= 3.14
 * gtk+3
 * json-glib-1.0
 
-Install Submodule
-==================
-
-::
-
-    git submodule update --init --recursive
+The CMake configuration downloads the `jansson` and `uthash` dependencies
+automatically via `FetchContent`, so no manual Git submodule steps are
+required.
 
 Build Client
 ============
