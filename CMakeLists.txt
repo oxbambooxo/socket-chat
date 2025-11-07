@@ -40,19 +40,6 @@ if(CMAKE_VERSION VERSION_LESS 3.11)
         set_property(TARGET jansson APPEND PROPERTY INTERFACE_LINK_LIBRARIES m)
     endif()
 
-    ExternalProject_Add(uthash_external
-        PREFIX ${third_party_root}/uthash
-        GIT_REPOSITORY https://github.com/troydhanson/uthash.git
-        GIT_TAG v2.3.0
-        UPDATE_DISCONNECTED 1
-        CONFIGURE_COMMAND ""
-        BUILD_COMMAND ""
-        INSTALL_COMMAND ""
-    )
-    ExternalProject_Get_Property(uthash_external source_dir)
-    add_library(uthash INTERFACE)
-    add_dependencies(uthash uthash_external)
-    target_include_directories(uthash INTERFACE ${source_dir}/src)
 else()
     include(FetchContent)
 
@@ -60,11 +47,6 @@ else()
         jansson
         GIT_REPOSITORY https://github.com/akheron/jansson.git
         GIT_TAG v2.14
-    )
-    FetchContent_Declare(
-        uthash
-        GIT_REPOSITORY https://github.com/troydhanson/uthash.git
-        GIT_TAG v2.3.0
     )
 
     set(JANSSON_BUILD_DOCS OFF CACHE BOOL "" FORCE)
@@ -74,13 +56,6 @@ else()
     set(JANSSON_EXAMPLES OFF CACHE BOOL "" FORCE)
 
     FetchContent_MakeAvailable(jansson)
-
-    FetchContent_GetProperties(uthash)
-    if(NOT uthash_POPULATED)
-        FetchContent_Populate(uthash)
-        add_library(uthash INTERFACE)
-        target_include_directories(uthash INTERFACE ${uthash_SOURCE_DIR}/src)
-    endif()
 endif()
 
 add_subdirectory(./client-c)

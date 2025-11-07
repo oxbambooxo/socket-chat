@@ -8,10 +8,9 @@ Requirement
 * gtk+3
 * json-glib-1.0
 
-The CMake configuration downloads the `jansson` and `uthash` dependencies
-automatically (using ``FetchContent`` on modern CMake and ``ExternalProject``
-when running on CMake 3.5–3.10), so no manual Git submodule steps are
-required.
+The CMake configuration downloads the `jansson` dependency automatically
+(using ``FetchContent`` on modern CMake and ``ExternalProject`` when running
+on CMake 3.5–3.10), so no manual Git submodule steps are required.
 
 Build Client
 ============
