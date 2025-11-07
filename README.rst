@@ -4,29 +4,32 @@
 Requirement
 ===========
 
-* cmake >= 3.4
-* gtk+3
-* json-glib-1.0
+* cmake >= 3.5 (CMake 3.11+ recommended for automatic dependency download)
+* gtk+3 (for building the GTK client; optional if you only need the server)
+* json-glib-1.0 (for building the GTK client; optional if you only need the server)
 
-Install Submodule
-==================
-
-::
-
-    git submodule update --init --recursive
+The CMake configuration downloads the `jansson` dependency automatically
+(using ``FetchContent`` on modern CMake and ``ExternalProject`` when running
+on CMake 3.5–3.10), so no manual Git submodule steps are required.
 
 Build Client
 ============
+
+The GTK client requires ``gtk+3`` and ``json-glib-1.0``. If either dependency
+is missing, the ``client`` target is skipped during configuration.
 
 ::
 
     cd build
     cmake ..
-    make client
+    cmake --build . --target client
     ./client-c/client
 
 Build Server
 ============
+
+Python implementation
+---------------------
 
 server temporary provior Python server(C version will coming soon),
 that need python2.7 and *gevent*::
@@ -36,6 +39,21 @@ that need python2.7 and *gevent*::
     python main.py <port>
 
 the port argument default is 56789
+
+C implementation
+----------------
+
+The experimental C server depends on ``libuv`` (``libuv1-dev`` on Debian/
+Ubuntu). After installing the dependency, build the target with CMake. If the
+GTK client dependencies are not installed, CMake emits a warning and skips the
+client target while still configuring the server::
+
+    cd build
+    cmake ..
+    cmake --build . --target server
+    ./server-c/server <port>
+
+If ``<port>`` is omitted, the server listens on ``56789``.
 
 C-S Protocol
 ============
