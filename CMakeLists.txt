@@ -58,21 +58,11 @@ else()
     FetchContent_MakeAvailable(jansson)
 
     FetchContent_GetProperties(jansson)
-    if(jansson_POPULATED)
-        if(TARGET jansson)
-            set(_jansson_public_includes)
-            if(EXISTS "${jansson_BINARY_DIR}/include")
-                list(APPEND _jansson_public_includes "${jansson_BINARY_DIR}/include")
-            endif()
-            if(EXISTS "${jansson_SOURCE_DIR}/src")
-                list(APPEND _jansson_public_includes "${jansson_SOURCE_DIR}/src")
-            endif()
-            if(_jansson_public_includes)
-                target_include_directories(jansson INTERFACE
-                    $<BUILD_INTERFACE:${_jansson_public_includes}>)
-            endif()
-            unset(_jansson_public_includes)
-        endif()
+    if(jansson_POPULATED AND TARGET jansson)
+        target_include_directories(jansson INTERFACE
+            $<BUILD_INTERFACE:${jansson_BINARY_DIR}/include>
+            $<BUILD_INTERFACE:${jansson_SOURCE_DIR}/src>
+            $<INSTALL_INTERFACE:include>)
     endif()
 endif()
 
